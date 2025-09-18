@@ -21,14 +21,27 @@ namespace OneBeyondApi.DataAccess
             }
         }
 
-        public List<BorrowerList> OnLoan()
+        public List<BorrowerList> OnLoan(CatalogueSearch search)
         {
             using (var context = new LibraryContext())
             {
                 var list = context.Catalogue
                     .Include(x => x.Book)
+                    .ThenInclude(x => x.Author)
                     .Include(x => x.OnLoanTo)
-                    .ToList();
+                    .AsQueryable();
+                
+                if (search != null)
+                {
+                    if (!string.IsNullOrEmpty(search.Author))
+                    {
+                        list = list.Where(x => x.Book.Author.Name.Contains(search.Author));
+                    }
+                    if (!string.IsNullOrEmpty(search.BookName))
+                    {
+                        list = list.Where(x => x.Book.Name.Contains(search.BookName));
+                    }
+                }
                 return list.Where(x => x.OnLoanTo != null).Select(x => new BorrowerList() { BorrowerName = x.OnLoanTo.Name, BookTitle = x.Book.Name }).ToList();
             }
         }

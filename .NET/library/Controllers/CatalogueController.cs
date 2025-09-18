@@ -25,11 +25,11 @@ namespace OneBeyondApi.Controllers
             return _catalogueRepository.GetCatalogue();
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("OnLoan")]
-        public IList<BorrowerList> OnLoan()
+        public IList<BorrowerList> OnLoan(CatalogueSearch search)
         {
-            return _catalogueRepository.OnLoan();
+            return _catalogueRepository.OnLoan(search);
         }
 
         [HttpPost]
