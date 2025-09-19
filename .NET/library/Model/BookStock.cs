@@ -6,5 +6,6 @@
         public Book Book { get; set; }
         public DateTime? LoanEndDate { get; set; }
         public Borrower? OnLoanTo { get; set; }
+        public List<Borrower> Waitlist { get; set; } = new List<Borrower>();
     }
 }
