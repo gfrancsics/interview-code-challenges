@@ -80,58 +80,92 @@ namespace OneBeyondApi.DataAccess
             }
         }
 
-        public BookStock OnLoanWithReservation(CatalogueSearch search, string borrowerName)
+        public ApiResponse<BookStock> OnLoanWithReservation(CatalogueSearch search, string borrowerName)
         {
-            using (var context = new LibraryContext())
+            try
             {
-                var bookStock = context.Catalogue
-                    .Include(bs => bs.Book)
-                    .ThenInclude(x => x.Author)
-                    .Include(bs => bs.OnLoanTo)
-                    .FirstOrDefault(bs => bs.Book.Name == search.BookName && bs.Book.Author.Name == search.Author);
-
-                if (bookStock == null)
+                using (var context = new LibraryContext())
                 {
-                    Console.WriteLine("Book not found.");
-                    return null;
-                }
+                    var bookStock = context.Catalogue
+                        .Include(bs => bs.Book)
+                        .ThenInclude(x => x.Author)
+                        .Include(bs => bs.OnLoanTo)
+                        .FirstOrDefault(bs => bs.Book.Name == search.BookName && bs.Book.Author.Name == search.Author);
 
-                Console.WriteLine($"Book found: {bookStock.Book.Name} by {bookStock.Book.Author.Name}");
-
-                if (bookStock.OnLoanTo != null)
-                {
-                    Console.WriteLine($"Book is currently on loan to: {bookStock.OnLoanTo.Name}");
-
-                    if (borrowerName == null)
+                    if (bookStock == null)
                     {
-                        Console.WriteLine("Please give the Borrower name.");
-                        return null;
+                        return new ApiResponse<BookStock>
+                        {
+                            IsSuccess = false,
+                            Message = "Book not found.",
+                            Data = null
+                        };
                     }
-
-                    Borrower borrower = context.Borrowers.FirstOrDefault(b => b.Name == borrowerName);
-                    if (borrower == null)
+                    
+                    if (bookStock.OnLoanTo != null)
                     {
-                        Console.WriteLine("Please register before the loaning.");
-                        return null;
-                    }
+                        if (borrowerName == null)
+                        {
+                            return new ApiResponse<BookStock>
+                            {
+                                IsSuccess = false,
+                                Message = "Borrower name is empty.",
+                                Data = null
+                            };
+                        }
 
-                    if (!bookStock.Waitlist.Any(w => w.Name == borrowerName))
-                    {
-                        bookStock.Waitlist.Add(borrower);
-                        context.SaveChanges();
-                        Console.WriteLine($"{borrowerName} added to the waitlist.");
+                        Borrower borrower = context.Borrowers.FirstOrDefault(b => b.Name == borrowerName);
+                        if (borrower == null)
+                        {
+                            return new ApiResponse<BookStock>
+                            {
+                                IsSuccess = false,
+                                Message = "Borrower name is not registered.",
+                                Data = null
+                            };
+                        }
+
+                        if (!bookStock.Waitlist.Any(w => w.Name == borrowerName))
+                        {
+                            bookStock.Waitlist.Add(borrower);
+                            context.SaveChanges();
+                            return new ApiResponse<BookStock>
+                            {
+                                IsSuccess = true,
+                                Message = $"Borrower {borrower.Name} added to the waitlist.",
+                                Data = bookStock
+                            };
+                        }
+                        else
+                        {
+                            return new ApiResponse<BookStock>
+                            {
+                                IsSuccess = false,
+                                Message = "Borrower is already on the waitlist.",
+                                Data = null
+                            };
+                        }
                     }
                     else
                     {
-                        Console.WriteLine($"{borrowerName} is already on the waitlist.");
+                        return new ApiResponse<BookStock>
+                        {
+                            IsSuccess = true,
+                            Message = "Book is available for borrowing.",
+                            Data = bookStock
+                        };
                     }
+                    
                 }
-                else
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<BookStock>
                 {
-                    Console.WriteLine("Book is available for borrowing.");
-                }
-
-                return bookStock;
+                    IsSuccess = false,
+                    Message = "Exception:" +ex.Message,
+                    Data = null
+                }; 
             }
         }
 

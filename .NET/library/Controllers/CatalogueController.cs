@@ -41,7 +41,7 @@ namespace OneBeyondApi.Controllers
 
         [HttpPost]
         [Route("OnLoanWithReservation")]
-        public BookStock OnLoanWithReservation(CatalogueSearch search, string borroweName)
+        public ApiResponse<BookStock> OnLoanWithReservation(CatalogueSearch search, string borroweName)
         {
             return _catalogueRepository.OnLoanWithReservation(search, borroweName);
         }
