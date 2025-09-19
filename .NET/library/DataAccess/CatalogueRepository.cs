@@ -85,8 +85,7 @@ namespace OneBeyondApi.DataAccess
                             if (DateTime.Now > bookStock.LoanEndDate)
                             {
                                 //issue a fine
-                                borrower.Fine += 100;
-                                //context.Entry(borrower.Fine).State = EntityState.Modified;
+                                borrower.Fine = (borrower.Fine ?? 0) + 100;
                                 //make the book available
                                 bookStock.OnLoanTo = null;
                                 bookStock.LoanEndDate = null;
