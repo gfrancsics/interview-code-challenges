@@ -34,12 +34,23 @@ namespace OneBeyondApi.DataAccess
             }
         }
 
-        public ApiResponse<BookStock> OnLoanWithReservation(CatalogueSearch search, string borrowerName)
+        public ApiResponse<BookStock> OnLoan(CatalogueSearch search, string borrowerName)
         {
             try
             {
                 using (var context = new LibraryContext())
                 {
+                    if (String.IsNullOrEmpty(borrowerName))
+                    {
+                        return CreateResponse<BookStock>(false, "Borrower name is empty.", null);
+                    }
+
+                    var borrower = context.Borrowers.FirstOrDefault(b => b.Name == borrowerName);
+                    if (borrower == null)
+                    {
+                        return CreateResponse<BookStock>(false, "Borrower name is not registered.", null);
+                    }
+
                     var bookStock = context.Catalogue
                         .Include(bs => bs.Book)
                         .ThenInclude(x => x.Author)
@@ -48,36 +59,11 @@ namespace OneBeyondApi.DataAccess
 
                     if (bookStock == null)
                     {
-                        return new ApiResponse<BookStock>
-                        {
-                            IsSuccess = false,
-                            Message = "Book not found.",
-                            Data = null
-                        };
+                        return CreateResponse<BookStock>(false, "Book not found.", null);
                     }
-                    //ki van adva
+                    //loaned
                     if (bookStock.OnLoanTo != null)
                     {
-                        if (borrowerName == null)
-                        {
-                            return new ApiResponse<BookStock>
-                            {
-                                IsSuccess = false,
-                                Message = "Borrower name is empty.",
-                                Data = null
-                            };
-                        }
-
-                        Borrower borrower = context.Borrowers.FirstOrDefault(b => b.Name == borrowerName);
-                        if (borrower == null)
-                        {
-                            return new ApiResponse<BookStock>
-                            {
-                                IsSuccess = false,
-                                Message = "Borrower name is not registered.",
-                                Data = null
-                            };
-                        }
                         //borrower match
                         if(bookStock.OnLoanTo.Name == borrower.Name)
                         {
@@ -90,12 +76,7 @@ namespace OneBeyondApi.DataAccess
                                 bookStock.OnLoanTo = null;
                                 bookStock.LoanEndDate = null;
                                 context.SaveChanges();
-                                return new ApiResponse<BookStock>
-                                {
-                                    IsSuccess = true,
-                                    Message = $"Loaning closed with penalty at borrower:{borrower.Name}.",
-                                    Data = bookStock
-                                };
+                                return CreateResponse<BookStock>(true, $"Loaning closed with penalty at borrower:{borrower.Name}.", bookStock);
                             }
                             //not expired
                             else
@@ -103,55 +84,30 @@ namespace OneBeyondApi.DataAccess
                                 bookStock.OnLoanTo = null;
                                 bookStock.LoanEndDate = null;
                                 context.SaveChanges();
-                                return new ApiResponse<BookStock>
-                                {
-                                    IsSuccess = true,
-                                    Message = $"Loaning closed at borrower:{borrower.Name}.",
-                                    Data = bookStock
-                                };
+                                return CreateResponse<BookStock>(true, $"Loaning closed at borrower:{borrower.Name}.", bookStock);
                             }
                         }
                         else if (!bookStock.Waitlist.Any(w => w.Name == borrowerName))
                         {
                             bookStock.Waitlist.Add(borrower);
                             context.SaveChanges();
-                            return new ApiResponse<BookStock>
-                            {
-                                IsSuccess = true,
-                                Message = $"Borrower {borrower.Name} added to the waitlist.",
-                                Data = bookStock
-                            };
+                            return CreateResponse<BookStock>(true, $"Borrower {borrower.Name} added to the waitlist.", bookStock);
                         }
                         else
                         {
-                            return new ApiResponse<BookStock>
-                            {
-                                IsSuccess = false,
-                                Message = "Borrower is already on the waitlist.",
-                                Data = null
-                            };
+                            return CreateResponse<BookStock>(false, "Borrower is already on the waitlist.", null);
                         }
                     }
                     else
                     {
-                        return new ApiResponse<BookStock>
-                        {
-                            IsSuccess = true,
-                            Message = "Book is available for borrowing.",
-                            Data = bookStock
-                        };
+                        return CreateResponse<BookStock>(true, "Book is available for borrowing.", bookStock);
                     }
                     
                 }
             }
             catch (Exception ex)
             {
-                return new ApiResponse<BookStock>
-                {
-                    IsSuccess = false,
-                    Message = "Exception:" +ex.Message,
-                    Data = null
-                }; 
+                return CreateResponse<BookStock>(false, $"Exception: {ex.Message}", null); 
             }
         }
 
@@ -177,6 +133,16 @@ namespace OneBeyondApi.DataAccess
                     
                 return list.ToList();
             }
+        }
+
+        private ApiResponse<T> CreateResponse<T>(bool isSuccess, string message, T data)
+        {
+            return new ApiResponse<T>
+            {
+                IsSuccess = isSuccess,
+                Message = message,
+                Data = data
+            };
         }
     }
 }
