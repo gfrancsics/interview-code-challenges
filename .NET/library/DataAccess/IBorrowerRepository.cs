@@ -8,6 +8,5 @@ namespace OneBeyondApi.DataAccess
 
         public Guid AddBorrower(Borrower borrower);
 
-        public void IssueFine(Borrower borrower);
     }
 }
