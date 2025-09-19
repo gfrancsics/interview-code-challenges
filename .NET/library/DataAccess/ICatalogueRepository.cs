@@ -6,7 +6,9 @@ namespace OneBeyondApi.DataAccess
     {
         public List<BookStock> GetCatalogue();
 
-        public List<BorrowerList> OnLoan(CatalogueSearch search);
+        public List<BorrowerData> OnLoan();
+        
+        public BorrowerData OnLoan(CatalogueSearch search);
 
         public List<BookStock> SearchCatalogue(CatalogueSearch search);
     }

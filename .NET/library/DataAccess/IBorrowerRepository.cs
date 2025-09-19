@@ -7,5 +7,7 @@ namespace OneBeyondApi.DataAccess
         public List<Borrower> GetBorrowers();
 
         public Guid AddBorrower(Borrower borrower);
+
+        public void IssueFine(Borrower borrower);
     }
 }
